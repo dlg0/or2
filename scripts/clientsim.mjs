@@ -51,9 +51,9 @@ function scheduleReconnect() {
 setInterval(() => {
   try {
     if (!room) return;
-    const dx = Math.random() < 0.5 ? -1 : 1;
-    const dy = Math.random() < 0.5 ? -1 : 1;
-    room.send({ type: 'move', dx, dy });
+    const dx = (Math.random() < 0.5 ? -1 : 1);
+    const dy = (Math.random() < 0.5 ? -1 : 1);
+    room.send('move', { dx, dy });
   } catch {}
 }, 200);
 

@@ -37,6 +37,16 @@ class WorldRoom extends Room {
     this.setState(new WorldState());
     this.setSimulationInterval(() => this.update(), 1000 / 15);
     flog(`room:create id=${this.roomId}`);
+
+    this.onMessage("move", (client, message: any) => {
+      const p = this.state.players.get(client.sessionId);
+      if (!p) return;
+      const parsed = MoveInput.partial({ seq: true, keys: true }).safeParse(message);
+      if (!parsed.success) return;
+      const { dx, dy } = parsed.data;
+      p.x += clamp(dx ?? 0, -1, 1) * 3;
+      p.y += clamp(dy ?? 0, -1, 1) * 3;
+    });
   }
 
   onJoin(client: any) {
@@ -46,18 +56,6 @@ class WorldRoom extends Room {
     p.color = randomColor();
     this.state.players.set(client.sessionId, p);
     flog(`room:join room=${this.roomId} session=${client.sessionId} clients=${this.clients.length}`);
-  }
-
-  onMessage(client: any, message: any) {
-    const p = this.state.players.get(client.sessionId);
-    if (!p) return;
-    if (message?.type === "move") {
-      const parsed = MoveInput.partial({ seq: true, keys: true }).safeParse({ dx: message.dx, dy: message.dy });
-      if (!parsed.success) return;
-      const { dx, dy } = parsed.data;
-      p.x += clamp(dx ?? 0, -1, 1) * 3;
-      p.y += clamp(dy ?? 0, -1, 1) * 3;
-  }
   }
 
   onLeave(client: any) {

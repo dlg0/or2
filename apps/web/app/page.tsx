@@ -187,7 +187,7 @@ export default function HomePage() {
     const sendServer = setInterval(() => {
       try {
         const { dx, dy } = lastDxDy.current;
-        room?.send({ type: "move", dx, dy });
+        room?.send("move", { dx, dy });
       } catch {}
     }, 50); // 20 Hz network
 
