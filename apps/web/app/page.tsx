@@ -18,45 +18,61 @@ export default function HomePage() {
   const selfColorSet = useRef(false);
   const lastDxDy = useRef({ dx: 0, dy: 0 });
 
-  // Connect to Colyseus server
+  // Connect to Colyseus server with simple reconnect loop
   useEffect(() => {
     let disposed = false;
     const url = process.env.NEXT_PUBLIC_SERVER_URL || "ws://localhost:2567";
     const client = new Client(url.replace(/^http/, "ws"));
-    setStatus("connecting");
-    client
-      .joinOrCreate("world")
-      .then((joined) => {
-        if (disposed) return;
-        setRoom(joined);
-        setStatus("connected");
-        setSelfId(joined.sessionId);
-        joined.onStateChange((state: any) => {
-          if (!state || !state.players) return;
-          const copy: Record<string, { x: number; y: number; color: string; stage: number; points: number }> = {};
-          if (typeof state.players.forEach === "function") {
-            state.players.forEach((p: any, id: string) => {
-              copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
-            });
-          } else {
-            for (const id in state.players) {
-              const p = state.players[id];
-              copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+
+    let reconnectDelay = 500;
+    const connect = () => {
+      if (disposed) return;
+      setStatus("connecting");
+      client
+        .joinOrCreate("world")
+        .then((joined) => {
+          if (disposed) return;
+          setRoom(joined);
+          setStatus("connected");
+          setSelfId(joined.sessionId);
+          reconnectDelay = 500; // reset backoff
+
+          joined.onStateChange((state: any) => {
+            if (!state || !state.players) return;
+            const copy: Record<string, { x: number; y: number; color: string; stage: number; points: number }> = {};
+            if (typeof state.players.forEach === "function") {
+              state.players.forEach((p: any, id: string) => {
+                copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+              });
+            } else {
+              for (const id in state.players) {
+                const p = state.players[id];
+                copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+              }
             }
-          }
-          setPlayers(copy);
-          const sid = joined.sessionId;
-          if (sid && copy[sid] && !selfColorSet.current) {
-            setColor(copy[sid].color); // set color once from server
-            selfColorSet.current = true;
-          }
+            setPlayers(copy);
+            const sid = joined.sessionId;
+            if (sid && copy[sid] && !selfColorSet.current) {
+              setColor(copy[sid].color); // set color once from server
+              selfColorSet.current = true;
+            }
+          });
+          joined.onLeave(() => {
+            setStatus("disconnected");
+            setTimeout(connect, reconnectDelay);
+            reconnectDelay = Math.min(reconnectDelay * 2, 5000);
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to connect:", err);
+          setStatus("error");
+          setTimeout(connect, reconnectDelay);
+          reconnectDelay = Math.min(reconnectDelay * 2, 5000);
         });
-        joined.onLeave(() => setStatus("disconnected"));
-      })
-      .catch((err) => {
-        console.error("Failed to connect:", err);
-        setStatus("error");
-      });
+    };
+
+    connect();
+
     return () => {
       disposed = true;
       try {

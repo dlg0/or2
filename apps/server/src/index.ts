@@ -31,6 +31,8 @@ class WorldRoom extends Room {
     p.y = 0;
     p.color = randomColor();
     this.state.players.set(client.sessionId, p);
+    // eslint-disable-next-line no-console
+    console.log(`[world] join ${client.sessionId} clients=${this.clients.length} players=${this.state.players.size}`);
   }
 
   onMessage(client: any, message: any) {
@@ -47,6 +49,8 @@ class WorldRoom extends Room {
 
   onLeave(client: any) {
     this.state.players.delete(client.sessionId);
+    // eslint-disable-next-line no-console
+    console.log(`[world] leave ${client.sessionId} clients=${this.clients.length} players=${this.state.players.size}`);
   }
 
   update() {
