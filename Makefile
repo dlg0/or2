@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: setup dev build lint test web server
+.PHONY: setup dev build lint test web server kill kill-dry
 
 setup:
 	@echo "Installing root and workspace deps"
@@ -24,3 +24,8 @@ web:
 server:
 	cd apps/server && npm run dev
 
+kill-dry:
+	./scripts/kill-dev.sh
+
+kill:
+	./scripts/kill-dev.sh -f
