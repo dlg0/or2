@@ -4,7 +4,11 @@
     "outDir": "dist",
     "rootDir": "src",
     "noEmit": false,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "baseUrl": ".",
+    "paths": {
+      "@db/*": ["../../packages/db/src/*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

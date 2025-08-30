@@ -4,6 +4,10 @@ import fs from "fs";
 import { Server, Room } from "colyseus";
 import { MoveInput } from "@openworld/shared";
 import { Schema, MapSchema, type } from "@colyseus/schema";
+import { getDb } from "@db/client";
+import { childProfiles, families } from "@db/schema";
+import { eq } from "drizzle-orm";
+import cookie from "cookie";
 
 class Player extends Schema {
   @type("number") x: number = 0;
@@ -32,6 +36,29 @@ function flog(msg: string) {
 
 class WorldRoom extends Room {
   maxClients = 100;
+
+  async onAuth(client: any, options: any, request: any) {
+    try {
+      const headers = request?.headers || {};
+      const cookieHeader = headers.cookie || headers.Cookie;
+      const requireKid = process.env.REQUIRE_KID_AUTH === "1";
+      if (!cookieHeader) return !requireKid; // allow if not required
+      const jar = cookie.parse(cookieHeader);
+      if (jar.kid_id) {
+        const db = getDb();
+        const kidId = jar.kid_id as string;
+        const rows = await db.select().from(childProfiles).where(eq(childProfiles.id, kidId)).limit(1);
+        if (rows.length === 0) return false;
+        // Optional: verify family's status as well
+        const famRows = await db.select().from(families).where(eq(families.id, rows[0].familyId)).limit(1);
+        const famOk = famRows.length > 0 && (famRows[0] as any).status !== "blocked"; // simple gate
+        return rows[0].status === "approved" && famOk;
+      }
+      return !requireKid; // allow if not required
+    } catch {
+      return false;
+    }
+  }
 
   onCreate() {
     this.setState(new WorldState());
