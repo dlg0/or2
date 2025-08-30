@@ -35,7 +35,8 @@ class WorldRoom extends Room {
 
   onCreate() {
     this.setState(new WorldState());
-    this.setSimulationInterval(() => this.update(), 1000 / 15);
+    const TICK_HZ = Number(process.env.TICK_HZ || 60);
+    this.setSimulationInterval(() => this.update(), 1000 / TICK_HZ);
     flog(`room:create id=${this.roomId}`);
 
     this.onMessage("move", (client, message: any) => {

@@ -8,7 +8,6 @@ type Vec = { x: number; y: number };
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [pos, setPos] = useState<Vec>({ x: 0, y: 0 });
   const [camera, setCamera] = useState<Vec>({ x: 0, y: 0 });
   const [color, setColor] = useState<string>(randomColor());
   const [room, setRoom] = useState<Room | null>(null);
@@ -17,12 +16,12 @@ export default function HomePage() {
   const [selfId, setSelfId] = useState<string | null>(null);
   const selfColorSet = useRef(false);
   const lastDxDy = useRef({ dx: 0, dy: 0 });
+  const connectedRef = useRef(false);
   const [serverUrl] = useState<string>(process.env.NEXT_PUBLIC_SERVER_URL || "ws://localhost:2567");
 
   // Connect to Colyseus server with simple reconnect loop (idempotent)
   useEffect(() => {
     let disposed = false;
-    const connectedRef = useRef(false);
     const retryTimer = { id: 0 as any };
     const client = new Client(serverUrl.replace(/^http/, "ws"));
 
@@ -105,7 +104,10 @@ export default function HomePage() {
       ctx.clearRect(0, 0, c.width, c.height);
       // sloppy-scroll camera towards player
       const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-      setCamera((cam) => ({ x: lerp(cam.x, pos.x, 0.1), y: lerp(cam.y, pos.y, 0.1) }));
+      const me = selfId ? players[selfId] : undefined;
+      if (me) {
+        setCamera((cam) => ({ x: lerp(cam.x, me.x, 0.1), y: lerp(cam.y, me.y, 0.1) }));
+      }
 
       // draw background grid
       ctx.strokeStyle = "#222";
@@ -140,8 +142,8 @@ export default function HomePage() {
       }
       
       // draw self using local position
-      const px = Math.floor(pos.x - camera.x + c.width / 2);
-      const py = Math.floor(pos.y - camera.y + c.height / 2);
+      const px = Math.floor((selfId && players[selfId] ? players[selfId].x : 0) - camera.x + c.width / 2);
+      const py = Math.floor((selfId && players[selfId] ? players[selfId].y : 0) - camera.y + c.height / 2);
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(px, py, 10, 0, Math.PI * 2);
@@ -155,7 +157,7 @@ export default function HomePage() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, [pos, color, camera.x, camera.y, players, selfId]);
+  }, [color, camera.x, camera.y, players, selfId]);
 
   useEffect(() => {
     const pressed = new Set<string>();
@@ -171,7 +173,6 @@ export default function HomePage() {
     window.addEventListener("keyup", onUp, { passive: false } as any);
 
     const moveLocal = setInterval(() => {
-      const speed = 3;
       let dx = 0;
       let dy = 0;
       if (pressed.has("ArrowRight") || pressed.has("d")) dx += 1;
@@ -179,9 +180,6 @@ export default function HomePage() {
       if (pressed.has("ArrowDown") || pressed.has("s")) dy += 1;
       if (pressed.has("ArrowUp") || pressed.has("w")) dy -= 1;
       lastDxDy.current = { dx, dy };
-      if (dx !== 0 || dy !== 0) {
-        setPos((p) => ({ x: p.x + dx * speed, y: p.y + dy * speed }));
-      }
     }, 16); // smooth local movement
 
     const sendServer = setInterval(() => {
@@ -189,7 +187,7 @@ export default function HomePage() {
         const { dx, dy } = lastDxDy.current;
         room?.send("move", { dx, dy });
       } catch {}
-    }, 50); // 20 Hz network
+    }, 16); // ~60 Hz network
 
     return () => {
       clearInterval(moveLocal);

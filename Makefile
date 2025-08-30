@@ -47,7 +47,6 @@ kill-sims:
 	      echo "Stopping $$name (pid $$pid)"; \
 	      kill -TERM $$pid 2>/dev/null || true; \
 	      sleep 0.5; \
-
 	      if kill -0 $$pid 2>/dev/null; then \
 	        echo "Force killing $$name (pid $$pid)"; \
 	        kill -KILL $$pid 2>/dev/null || true; \
