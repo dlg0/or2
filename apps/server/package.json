@@ -13,7 +13,9 @@
   "overrides": {},
   "dependencies": {
     "colyseus": "latest",
-    "express": "latest"
+    "express": "latest",
+    "@openworld/shared": "0.1.0",
+    "@colyseus/schema": "latest"
   },
   "devDependencies": {
     "@types/express": "latest",

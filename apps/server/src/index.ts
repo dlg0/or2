@@ -1,32 +1,54 @@
 import http from "http";
 import express from "express";
 import { Server, Room } from "colyseus";
+import { MoveInput } from "@openworld/shared";
+import { Schema, MapSchema, type } from "@colyseus/schema";
+
+class Player extends Schema {
+  @type("number") x: number = 0;
+  @type("number") y: number = 0;
+  @type("string") color: string = randomColor();
+  @type("number") stage: number = 0;
+  @type("number") points: number = 0;
+}
+
+class WorldState extends Schema {
+  @type({ map: Player })
+  players = new MapSchema<Player>();
+}
 
 class WorldRoom extends Room {
   maxClients = 100;
 
   onCreate() {
-    // Minimal state; expand with schema later
-    this.setState({ players: {} as Record<string, { x: number; y: number; color: string; stage: number; points: number }> });
+    this.setState(new WorldState());
     this.setSimulationInterval(() => this.update(), 1000 / 15);
   }
 
   onJoin(client: any) {
-    this.state.players[client.sessionId] = { x: 0, y: 0, color: randomColor(), stage: 0, points: 0 };
+    const p = new Player();
+    p.x = 0;
+    p.y = 0;
+    p.color = randomColor();
+    this.state.players.set(client.sessionId, p);
+    // eslint-disable-next-line no-console
+    console.log("join:", client.sessionId, "players:", Object.keys(this.state.players).length);
   }
 
   onMessage(client: any, message: any) {
-    const p = this.state.players[client.sessionId];
+    const p = this.state.players.get(client.sessionId);
     if (!p) return;
-    if (message.type === "move") {
-      const { dx, dy } = message;
-      p.x += clamp(dx, -1, 1) * 3;
-      p.y += clamp(dy, -1, 1) * 3;
+    if (message?.type === "move") {
+      const parsed = MoveInput.partial({ seq: true, keys: true }).safeParse({ dx: message.dx, dy: message.dy });
+      if (!parsed.success) return;
+      const { dx, dy } = parsed.data;
+      p.x += clamp(dx ?? 0, -1, 1) * 3;
+      p.y += clamp(dy ?? 0, -1, 1) * 3;
     }
   }
 
   onLeave(client: any) {
-    delete this.state.players[client.sessionId];
+    this.state.players.delete(client.sessionId);
   }
 
   update() {
@@ -53,4 +75,3 @@ function randomColor() {
   const colors = ["#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#f1c40f"];
   return colors[Math.floor(Math.random() * colors.length)];
 }
-

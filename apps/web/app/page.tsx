@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Client, Room } from "colyseus.js";
+// import { MoveInput } from "@openworld/shared"; // optional typing
 
 type Vec = { x: number; y: number };
 
@@ -9,6 +11,50 @@ export default function HomePage() {
   const [pos, setPos] = useState<Vec>({ x: 0, y: 0 });
   const [camera, setCamera] = useState<Vec>({ x: 0, y: 0 });
   const [color, setColor] = useState<string>(randomColor());
+  const [room, setRoom] = useState<Room | null>(null);
+  const [players, setPlayers] = useState<Record<string, { x: number; y: number; color: string; stage: number; points: number }>>({});
+  const [status, setStatus] = useState<string>("disconnected");
+  const [selfId, setSelfId] = useState<string | null>(null);
+
+  // Connect to Colyseus server
+  useEffect(() => {
+    let disposed = false;
+    const url = process.env.NEXT_PUBLIC_SERVER_URL || "ws://localhost:2567";
+    const client = new Client(url.replace(/^http/, "ws"));
+    setStatus("connecting");
+    client
+      .joinOrCreate("world")
+      .then((joined) => {
+        if (disposed) return;
+        setRoom(joined);
+        setStatus("connected");
+        setSelfId(joined.sessionId);
+        joined.onStateChange((state: any) => {
+          if (!state || !state.players) return;
+          const copy: Record<string, { x: number; y: number; color: string; stage: number; points: number }> = {};
+          for (const id in state.players) {
+            const p = state.players[id];
+            copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+          }
+          setPlayers(copy);
+          if (selfId && copy[selfId]) {
+            setPos({ x: copy[selfId].x, y: copy[selfId].y });
+            setColor(copy[selfId].color);
+          }
+        });
+        joined.onLeave(() => setStatus("disconnected"));
+      })
+      .catch((err) => {
+        console.error("Failed to connect:", err);
+        setStatus("error");
+      });
+    return () => {
+      disposed = true;
+      try {
+        room?.leave();
+      } catch {}
+    };
+  }, []);
 
   useEffect(() => {
     const c = canvasRef.current!;
@@ -46,13 +92,18 @@ export default function HomePage() {
         ctx.stroke();
       }
 
-      // draw player (simple circle)
-      const px = Math.floor(pos.x - camera.x + c.width / 2);
-      const py = Math.floor(pos.y - camera.y + c.height / 2);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(px, py, 10, 0, Math.PI * 2);
-      ctx.fill();
+      // draw players
+      for (const id in players) {
+        const pl = players[id];
+        const px = Math.floor(pl.x - camera.x + c.width / 2);
+        const py = Math.floor(pl.y - camera.y + c.height / 2);
+        ctx.globalAlpha = id === selfId ? 1 : 0.85;
+        ctx.fillStyle = pl.color;
+        ctx.beginPath();
+        ctx.arc(px, py, id === selfId ? 10 : 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
 
       raf = requestAnimationFrame(render);
     };
@@ -72,10 +123,17 @@ export default function HomePage() {
     window.addEventListener("keyup", onUp);
     const id = setInterval(() => {
       const speed = 3;
-      setPos((p) => ({
-        x: p.x + (pressed.has("ArrowRight") || pressed.has("d") ? speed : 0) - (pressed.has("ArrowLeft") || pressed.has("a") ? speed : 0),
-        y: p.y + (pressed.has("ArrowDown") || pressed.has("s") ? speed : 0) - (pressed.has("ArrowUp") || pressed.has("w") ? speed : 0)
-      }));
+      let dx = 0;
+      let dy = 0;
+      if (pressed.has("ArrowRight") || pressed.has("d")) dx += 1;
+      if (pressed.has("ArrowLeft") || pressed.has("a")) dx -= 1;
+      if (pressed.has("ArrowDown") || pressed.has("s")) dy += 1;
+      if (pressed.has("ArrowUp") || pressed.has("w")) dy -= 1;
+      setPos((p) => ({ x: p.x + dx * speed, y: p.y + dy * speed }));
+      // send input to server
+      try {
+        room?.send({ type: "move", dx, dy });
+      } catch {}
     }, 16);
     return () => {
       clearInterval(id);
@@ -87,6 +145,9 @@ export default function HomePage() {
   return (
     <main>
       <canvas ref={canvasRef} style={{ display: "block", width: "100vw", height: "100vh" }} />
+      <div style={{ position: "fixed", top: 8, left: 8, color: "#aaa", fontFamily: "monospace", fontSize: 12 }}>
+        status: {status} • players: {Object.keys(players).length}
+      </div>
     </main>
   );
 }
@@ -95,4 +156,3 @@ function randomColor() {
   const colors = ["#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#f1c40f"];
   return colors[Math.floor(Math.random() * colors.length)];
 }
-

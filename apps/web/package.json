@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "colyseus.js": "latest",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "@openworld/shared": "0.1.0",
     "zustand": "latest"
   },
   "devDependencies": {
