@@ -19,19 +19,21 @@ export default function HomePage() {
   const lastDxDy = useRef({ dx: 0, dy: 0 });
   const [serverUrl] = useState<string>(process.env.NEXT_PUBLIC_SERVER_URL || "ws://localhost:2567");
 
-  // Connect to Colyseus server with simple reconnect loop
+  // Connect to Colyseus server with simple reconnect loop (idempotent in Strict Mode)
   useEffect(() => {
     let disposed = false;
+    const connectedRef = { current: !!room };
     const client = new Client(serverUrl.replace(/^http/, "ws"));
 
     let reconnectDelay = 500;
     const connect = () => {
-      if (disposed) return;
+      if (disposed || connectedRef.current) return;
       setStatus("connecting");
       client
         .joinOrCreate("world")
         .then((joined) => {
           if (disposed) return;
+          connectedRef.current = true;
           setRoom(joined);
           setStatus("connected");
           setSelfId(joined.sessionId);
@@ -62,6 +64,7 @@ export default function HomePage() {
           });
           joined.onLeave(() => {
             setStatus("disconnected");
+            connectedRef.current = false;
             setTimeout(connect, reconnectDelay);
             reconnectDelay = Math.min(reconnectDelay * 2, 5000);
           });
@@ -78,9 +81,7 @@ export default function HomePage() {
 
     return () => {
       disposed = true;
-      try {
-        room?.leave();
-      } catch {}
+      // Do not force leave here to avoid dev strict-mode double cleanup
     };
   }, []);
 
