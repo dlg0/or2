@@ -31,8 +31,6 @@ class WorldRoom extends Room {
     p.y = 0;
     p.color = randomColor();
     this.state.players.set(client.sessionId, p);
-    // eslint-disable-next-line no-console
-    console.log("join:", client.sessionId, "players:", Object.keys(this.state.players).length);
   }
 
   onMessage(client: any, message: any) {

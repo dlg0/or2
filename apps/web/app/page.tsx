@@ -32,14 +32,21 @@ export default function HomePage() {
         joined.onStateChange((state: any) => {
           if (!state || !state.players) return;
           const copy: Record<string, { x: number; y: number; color: string; stage: number; points: number }> = {};
-          for (const id in state.players) {
-            const p = state.players[id];
-            copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+          if (typeof state.players.forEach === "function") {
+            state.players.forEach((p: any, id: string) => {
+              copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+            });
+          } else {
+            for (const id in state.players) {
+              const p = state.players[id];
+              copy[id] = { x: p.x, y: p.y, color: p.color, stage: p.stage, points: p.points };
+            }
           }
           setPlayers(copy);
-          if (selfId && copy[selfId]) {
-            setPos({ x: copy[selfId].x, y: copy[selfId].y });
-            setColor(copy[selfId].color);
+          const sid = joined.sessionId;
+          if (sid && copy[sid]) {
+            setPos({ x: copy[sid].x, y: copy[sid].y });
+            setColor(copy[sid].color);
           }
         });
         joined.onLeave(() => setStatus("disconnected"));
@@ -113,7 +120,7 @@ export default function HomePage() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, [pos, color, camera.x, camera.y]);
+  }, [pos, color, camera.x, camera.y, players, selfId]);
 
   useEffect(() => {
     const pressed = new Set<string>();
