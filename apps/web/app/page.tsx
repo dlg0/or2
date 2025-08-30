@@ -15,6 +15,8 @@ export default function HomePage() {
   const [players, setPlayers] = useState<Record<string, { x: number; y: number; color: string; stage: number; points: number }>>({});
   const [status, setStatus] = useState<string>("disconnected");
   const [selfId, setSelfId] = useState<string | null>(null);
+  const selfColorSet = useRef(false);
+  const lastDxDy = useRef({ dx: 0, dy: 0 });
 
   // Connect to Colyseus server
   useEffect(() => {
@@ -44,9 +46,9 @@ export default function HomePage() {
           }
           setPlayers(copy);
           const sid = joined.sessionId;
-          if (sid && copy[sid]) {
-            setPos({ x: copy[sid].x, y: copy[sid].y });
-            setColor(copy[sid].color);
+          if (sid && copy[sid] && !selfColorSet.current) {
+            setColor(copy[sid].color); // set color once from server
+            selfColorSet.current = true;
           }
         });
         joined.onLeave(() => setStatus("disconnected"));
@@ -99,18 +101,27 @@ export default function HomePage() {
         ctx.stroke();
       }
 
-      // draw players
+      // draw other players from server state
       for (const id in players) {
+        if (id === selfId) continue;
         const pl = players[id];
         const px = Math.floor(pl.x - camera.x + c.width / 2);
         const py = Math.floor(pl.y - camera.y + c.height / 2);
-        ctx.globalAlpha = id === selfId ? 1 : 0.85;
+        ctx.globalAlpha = 0.85;
         ctx.fillStyle = pl.color;
         ctx.beginPath();
-        ctx.arc(px, py, id === selfId ? 10 : 8, 0, Math.PI * 2);
+        ctx.arc(px, py, 8, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
       }
+      
+      // draw self using local position
+      const px = Math.floor(pos.x - camera.x + c.width / 2);
+      const py = Math.floor(pos.y - camera.y + c.height / 2);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(px, py, 10, 0, Math.PI * 2);
+      ctx.fill();
 
       raf = requestAnimationFrame(render);
     };
@@ -124,28 +135,45 @@ export default function HomePage() {
 
   useEffect(() => {
     const pressed = new Set<string>();
-    const onDown = (e: KeyboardEvent) => pressed.add(e.key);
-    const onUp = (e: KeyboardEvent) => pressed.delete(e.key);
-    window.addEventListener("keydown", onDown);
-    window.addEventListener("keyup", onUp);
-    const id = setInterval(() => {
+    const onDown = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault();
+      pressed.add(e.key);
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault();
+      pressed.delete(e.key);
+    };
+    window.addEventListener("keydown", onDown, { passive: false } as any);
+    window.addEventListener("keyup", onUp, { passive: false } as any);
+
+    const moveLocal = setInterval(() => {
+      const speed = 3;
       let dx = 0;
       let dy = 0;
       if (pressed.has("ArrowRight") || pressed.has("d")) dx += 1;
       if (pressed.has("ArrowLeft") || pressed.has("a")) dx -= 1;
       if (pressed.has("ArrowDown") || pressed.has("s")) dy += 1;
       if (pressed.has("ArrowUp") || pressed.has("w")) dy -= 1;
-      // send input to server (server is authoritative for position)
+      lastDxDy.current = { dx, dy };
+      if (dx !== 0 || dy !== 0) {
+        setPos((p) => ({ x: p.x + dx * speed, y: p.y + dy * speed }));
+      }
+    }, 16); // smooth local movement
+
+    const sendServer = setInterval(() => {
       try {
+        const { dx, dy } = lastDxDy.current;
         room?.send({ type: "move", dx, dy });
       } catch {}
-    }, 50); // 20 Hz input rate
+    }, 50); // 20 Hz network
+
     return () => {
-      clearInterval(id);
-      window.removeEventListener("keydown", onDown);
-      window.removeEventListener("keyup", onUp);
+      clearInterval(moveLocal);
+      clearInterval(sendServer);
+      window.removeEventListener("keydown", onDown as any);
+      window.removeEventListener("keyup", onUp as any);
     };
-  }, []);
+  }, [room]);
 
   return (
     <main>
