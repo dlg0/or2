@@ -1,24 +1,27 @@
 "use client";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function RolePicker() {
   const { user, isSignedIn } = useUser();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
-  if (!isSignedIn) {
-    router.replace("/sign-in");
-    return null;
-  }
+  useEffect(() => {
+    if (!isSignedIn) {
+      router.replace("/sign-in");
+    }
+  }, [isSignedIn, router]);
+  if (!isSignedIn) return null;
 
   const setRole = async (role: "parent" | "child") => {
     if (!user) return;
     setBusy(true);
-    await user.update({ publicMetadata: { ...(user.publicMetadata || {}), role } });
+    // Use unsafeMetadata on the client; server can later copy vetted values to publicMetadata
+    await user.update({ unsafeMetadata: { ...(user.unsafeMetadata || {}), role } });
     setBusy(false);
-    router.push(role === "parent" ? "/parent" : "/play");
+    router.push(role === "parent" ? "/parent" : "/child/join");
   };
 
   return (
@@ -32,4 +35,3 @@ export default function RolePicker() {
     </main>
   );
 }
-

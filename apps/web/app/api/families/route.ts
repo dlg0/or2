@@ -13,8 +13,9 @@ export async function POST() {
   const existing = await db.select().from(families).where(eq(families.parentUserId, userId)).limit(1);
   if (existing.length > 0) return Response.json(existing[0]);
 
-  const code = randomBytes(3).toString("hex"); // 6-char code
+  // 4-char parent code, uppercase alphanumeric (no confusing chars)
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I, O, 0, 1
+  const code = Array.from({ length: 4 }, () => alphabet[randomBytes(1)[0] % alphabet.length]).join("");
   const [created] = await db.insert(families).values({ parentUserId: userId, parentCode: code }).returning();
   return Response.json(created);
 }
-
