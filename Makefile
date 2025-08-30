@@ -33,6 +33,14 @@ kill:
 logs-clean:
 	rm -rf logs && mkdir -p logs
 
+# Database (Drizzle + Postgres)
+.PHONY: db-generate db-migrate
+db-generate:
+	npm run db:generate
+
+db-migrate:
+	npm run db:migrate
+
 # Run two headless simulators against the server (requires server running)
 sims:
 	SERVER_URL=$${SERVER_URL:-ws://localhost:2567} NAME=sim-a node scripts/clientsim.mjs > logs/sim-a.console.log 2>&1 & echo $$! > logs/sim-a.pid

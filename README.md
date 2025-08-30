@@ -22,6 +22,13 @@ Monorepo scaffold for a web-first, 2D, multiplayer world designed for kids with 
 3. Run dev (both apps): `make dev`
    - Or separately: `make web` and `make server`
 
+### Database (Neon: octorobot)
+- Provision a Neon project named `octorobot` and copy the connection string.
+- Put the URL in `.env` as `DATABASE_URL` (SSL required).
+- Generate/apply migrations via Drizzle:
+  - `make db-generate` (creates SQL under `packages/db/migrations/`)
+  - `make db-migrate` (applies to the DB referenced by `DATABASE_URL`)
+
 ## Scripts
 - Root: `npm run dev|build|lint|test` (via Turbo)
 - Web: `npm -w apps/web run dev`
@@ -29,5 +36,4 @@ Monorepo scaffold for a web-first, 2D, multiplayer world designed for kids with 
 
 ## Notes
 - Server listens on `PORT=2567` by default.
-- Frontend currently renders local movement only; networking to be wired next.
 - See `docs/prds/games-spec.md` for PRD, data model, and roadmap.
