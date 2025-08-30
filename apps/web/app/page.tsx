@@ -129,19 +129,17 @@ export default function HomePage() {
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     const id = setInterval(() => {
-      const speed = 3;
       let dx = 0;
       let dy = 0;
       if (pressed.has("ArrowRight") || pressed.has("d")) dx += 1;
       if (pressed.has("ArrowLeft") || pressed.has("a")) dx -= 1;
       if (pressed.has("ArrowDown") || pressed.has("s")) dy += 1;
       if (pressed.has("ArrowUp") || pressed.has("w")) dy -= 1;
-      setPos((p) => ({ x: p.x + dx * speed, y: p.y + dy * speed }));
-      // send input to server
+      // send input to server (server is authoritative for position)
       try {
         room?.send({ type: "move", dx, dy });
       } catch {}
-    }, 16);
+    }, 50); // 20 Hz input rate
     return () => {
       clearInterval(id);
       window.removeEventListener("keydown", onDown);
