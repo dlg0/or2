@@ -20,3 +20,5 @@ dist/
 .idea/
 *.swp
 
+# Logs
+logs/

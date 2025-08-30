@@ -1,5 +1,6 @@
 import http from "http";
 import express from "express";
+import fs from "fs";
 import { Server, Room } from "colyseus";
 import { MoveInput } from "@openworld/shared";
 import { Schema, MapSchema, type } from "@colyseus/schema";
@@ -17,12 +18,25 @@ class WorldState extends Schema {
   players = new MapSchema<Player>();
 }
 
+// Simple file logger
+const logDir = `${process.cwd()}/../../logs`;
+try { fs.mkdirSync(logDir, { recursive: true }); } catch {}
+const serverLog = fs.createWriteStream(`${logDir}/server.log`, { flags: "a" });
+function flog(msg: string) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  serverLog.write(line);
+  // also mirror to console for dev
+  // eslint-disable-next-line no-console
+  console.log(msg);
+}
+
 class WorldRoom extends Room {
   maxClients = 100;
 
   onCreate() {
     this.setState(new WorldState());
     this.setSimulationInterval(() => this.update(), 1000 / 15);
+    flog(`room:create id=${this.roomId}`);
   }
 
   onJoin(client: any) {
@@ -31,8 +45,7 @@ class WorldRoom extends Room {
     p.y = 0;
     p.color = randomColor();
     this.state.players.set(client.sessionId, p);
-    // eslint-disable-next-line no-console
-    console.log(`[world] join ${client.sessionId} clients=${this.clients.length}`);
+    flog(`room:join room=${this.roomId} session=${client.sessionId} clients=${this.clients.length}`);
   }
 
   onMessage(client: any, message: any) {
@@ -44,13 +57,12 @@ class WorldRoom extends Room {
       const { dx, dy } = parsed.data;
       p.x += clamp(dx ?? 0, -1, 1) * 3;
       p.y += clamp(dy ?? 0, -1, 1) * 3;
-    }
+  }
   }
 
   onLeave(client: any) {
     this.state.players.delete(client.sessionId);
-    // eslint-disable-next-line no-console
-    console.log(`[world] leave ${client.sessionId} clients=${this.clients.length}`);
+    flog(`room:leave room=${this.roomId} session=${client.sessionId} clients=${this.clients.length}`);
   }
 
   update() {
