@@ -4,6 +4,7 @@ export const families = pgTable("families", {
   id: uuid("id").primaryKey().defaultRandom(),
   parentUserId: text("parent_user_id").notNull().unique(),
   parentCode: text("parent_code").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending|approved (admin approves parents)
 });
 
 export const childProfiles = pgTable("child_profiles", {
@@ -23,4 +24,3 @@ export const sessions = pgTable("sessions", {
   endedAt: timestamp("ended_at", { withTimezone: true }),
   secondsPlayed: integer("seconds_played"),
 });
-

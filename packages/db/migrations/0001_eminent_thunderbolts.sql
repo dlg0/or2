@@ -1,0 +1,1 @@
+ALTER TABLE "families" ADD COLUMN "status" text DEFAULT 'pending' NOT NULL;
