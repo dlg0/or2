@@ -1,5 +1,12 @@
 # Repository Guidelines
 
+**Project Overview**
+- **Goal:** Web-first, 2D multiplayer social world for kids (6–12) with parent-controlled safety.
+- **MVP Loop:** Choose simple shape avatar, move on a shared 2D canvas, see other players, preset emotes only.
+- **Safety Model:** Parent accounts own families; children require approval and have enforced play-time windows.
+- **World & Data:** Chunked world with color pickups driving points and evolution; durable state in Postgres, presence in Redis.
+- **Stack:** Next.js client (Canvas), Colyseus server, TypeScript across repo, Zod for shared schemas.
+
 ## Project Structure & Module Organization
 - Root keeps minimal config files (README, LICENSE, `.gitignore`).
 - Place source code in `src/` (language-specific subfolders if needed).
