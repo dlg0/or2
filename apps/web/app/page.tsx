@@ -17,12 +17,12 @@ export default function HomePage() {
   const [selfId, setSelfId] = useState<string | null>(null);
   const selfColorSet = useRef(false);
   const lastDxDy = useRef({ dx: 0, dy: 0 });
+  const [serverUrl] = useState<string>(process.env.NEXT_PUBLIC_SERVER_URL || "ws://localhost:2567");
 
   // Connect to Colyseus server with simple reconnect loop
   useEffect(() => {
     let disposed = false;
-    const url = process.env.NEXT_PUBLIC_SERVER_URL || "ws://localhost:2567";
-    const client = new Client(url.replace(/^http/, "ws"));
+    const client = new Client(serverUrl.replace(/^http/, "ws"));
 
     let reconnectDelay = 500;
     const connect = () => {
@@ -56,6 +56,9 @@ export default function HomePage() {
               setColor(copy[sid].color); // set color once from server
               selfColorSet.current = true;
             }
+          });
+          joined.onError((code, message) => {
+            console.error("room error", code, message);
           });
           joined.onLeave(() => {
             setStatus("disconnected");
@@ -195,7 +198,7 @@ export default function HomePage() {
     <main>
       <canvas ref={canvasRef} style={{ display: "block", width: "100vw", height: "100vh" }} />
       <div style={{ position: "fixed", top: 8, left: 8, color: "#aaa", fontFamily: "monospace", fontSize: 12 }}>
-        status: {status} • players: {Object.keys(players).length}
+        status: {status} • players: {Object.keys(players).length} • url: {serverUrl.replace(/^ws:\/\//, '')} {room ? `• room: ${room.roomId.slice(-4)} • id: ${room.sessionId.slice(-4)}` : ''}
       </div>
     </main>
   );

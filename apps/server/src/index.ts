@@ -32,7 +32,7 @@ class WorldRoom extends Room {
     p.color = randomColor();
     this.state.players.set(client.sessionId, p);
     // eslint-disable-next-line no-console
-    console.log(`[world] join ${client.sessionId} clients=${this.clients.length} players=${this.state.players.size}`);
+    console.log(`[world] join ${client.sessionId} clients=${this.clients.length}`);
   }
 
   onMessage(client: any, message: any) {
@@ -50,7 +50,7 @@ class WorldRoom extends Room {
   onLeave(client: any) {
     this.state.players.delete(client.sessionId);
     // eslint-disable-next-line no-console
-    console.log(`[world] leave ${client.sessionId} clients=${this.clients.length} players=${this.state.players.size}`);
+    console.log(`[world] leave ${client.sessionId} clients=${this.clients.length}`);
   }
 
   update() {
@@ -61,6 +61,10 @@ class WorldRoom extends Room {
 const app = express();
 const server = http.createServer(app);
 const game = new Server({ server });
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, pid: process.pid, time: new Date().toISOString() });
+});
 game.define("world", WorldRoom);
 
 const PORT = Number(process.env.PORT || 2567);
