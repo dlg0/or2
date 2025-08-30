@@ -5,6 +5,9 @@
     "paths": {
       "@shared/*": [
         "../../packages/shared/src/*"
+      ],
+      "@db/*": [
+        "../../packages/db/src/*"
       ]
     },
     "allowJs": true,

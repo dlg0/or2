@@ -12,8 +12,8 @@
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "db:generate": "turbo run generate --filter=@openworld/db",
-    "db:migrate": "turbo run migrate --filter=@openworld/db",
+    "db:generate": "npm -w @openworld/db run generate",
+    "db:migrate": "npm -w @openworld/db run migrate",
     "format": "prettier --write ."
   },
   "overrides": {
