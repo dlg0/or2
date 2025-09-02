@@ -5,7 +5,6 @@ import path from "path";
 import { Server, Room } from "colyseus";
 import { MoveInput, speedMultiplierFromUpgrades, getUpgradeById, UPGRADE_CATALOG } from "@openworld/shared";
 import { Schema, MapSchema, ArraySchema, type } from "@colyseus/schema";
-// Import directly from the workspace package source JS to avoid needing a build there
 import { getDb } from "@openworld/db/src/client";
 import { childProfiles, families } from "@openworld/db/src/schema";
 import { eq } from "drizzle-orm";
