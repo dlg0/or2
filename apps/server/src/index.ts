@@ -5,8 +5,9 @@ import path from "path";
 import { Server, Room } from "colyseus";
 import { MoveInput, speedMultiplierFromUpgrades, getUpgradeById, UPGRADE_CATALOG } from "@openworld/shared";
 import { Schema, MapSchema, ArraySchema, type } from "@colyseus/schema";
-import { getDb } from "@db/client";
-import { childProfiles, families } from "@db/schema";
+// Import directly from the workspace package source JS to avoid needing a build there
+import { getDb } from "@openworld/db/src/client";
+import { childProfiles, families } from "@openworld/db/src/schema";
 import { eq } from "drizzle-orm";
 import cookie from "cookie";
 import crypto from "crypto";
@@ -360,7 +361,7 @@ const app = express();
 const server = http.createServer(app);
 const game = new Server({ server });
 
-app.get("/health", (_req, res) => {
+app.get(["/health", "/healthz"], (_req, res) => {
   res.json({
     ok: true,
     pid: process.pid,

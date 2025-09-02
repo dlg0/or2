@@ -4,12 +4,14 @@
     "outDir": "dist",
     "rootDir": "../..",
     "noEmit": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
       "@db/*": ["../../packages/db/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "../../packages/db/src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "../../packages/db/src/**/*.ts", "../../packages/shared/src/**/*.ts"],
   "exclude": ["node_modules"]
 }

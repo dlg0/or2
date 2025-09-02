@@ -1,0 +1,14 @@
+[phases.install]
+commands = [
+  "npm ci"
+]
+
+[phases.build]
+commands = [
+  "npm -w @openworld/shared run build",
+  "npm -w server run build"
+]
+
+[start]
+cmd = "node apps/server/dist/index.js"
+

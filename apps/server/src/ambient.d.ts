@@ -9,3 +9,6 @@ declare module 'pg' {
     end(): Promise<void>;
   }
 }
+
+// Allow importing the local workspace package without published types
+declare module '@openworld/shared';
