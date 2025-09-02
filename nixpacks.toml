@@ -1,6 +1,6 @@
 [phases.install]
 commands = [
-  "npm ci"
+  "npm install --omit=dev"
 ]
 
 [phases.build]
@@ -11,4 +11,3 @@ commands = [
 
 [start]
 cmd = "node apps/server/dist/index.js"
-
