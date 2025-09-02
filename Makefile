@@ -7,7 +7,8 @@ setup:
 	npm install
 
 dev:
-	npm run dev
+	# Ensure all workspace dev servers inherit env from top-level .env
+	bash -lc 'set -a; [ -f .env ] && source .env; set +a; npm run dev'
 
 build:
 	npm run build
@@ -22,7 +23,7 @@ web:
 	cd apps/web && npm run dev
 
 server:
-	cd apps/server && npm run dev
+	cd apps/server && bash -lc 'set -a; [ -f ../../.env ] && source ../../.env; set +a; npm run dev'
 
 kill-dry:
 	./scripts/kill-dev.sh
@@ -42,10 +43,13 @@ db-migrate:
 	npm run db:migrate
 
 # Run two headless simulators against the server (requires server running)
+
 sims:
-	SERVER_URL=$${SERVER_URL:-ws://localhost:2567} NAME=sim-a node scripts/clientsim.mjs > logs/sim-a.console.log 2>&1 & echo $$! > logs/sim-a.pid
-	SERVER_URL=$${SERVER_URL:-ws://localhost:2567} NAME=sim-b node scripts/clientsim.mjs > logs/sim-b.console.log 2>&1 & echo $$! > logs/sim-b.pid
-	@echo "Started sims. Tail logs with: tail -f logs/client-sim-a.log logs/client-sim-b.log (or console logs in logs/sim-*.console.log)"
+	bash -lc 'set -a; [ -f .env ] && source .env; set +a; \
+	  SERVER_URL=$${SERVER_URL:-ws://localhost:2567} TOKEN_SECRET=$${TOKEN_SECRET} KID_ID=$${KID_ID_A} NAME=sim-a node scripts/clientsim.mjs > logs/sim-a.console.log 2>&1 & echo $$! > logs/sim-a.pid; \
+	  SERVER_URL=$${SERVER_URL:-ws://localhost:2567} TOKEN_SECRET=$${TOKEN_SECRET} KID_ID=$${KID_ID_B} NAME=sim-b node scripts/clientsim.mjs > logs/sim-b.console.log 2>&1 & echo $$! > logs/sim-b.pid; \
+	  echo "Started sims with env from .env if present."'
+	@echo "Started sims. Use KID_ID_A/KID_ID_B envs (approved child ids) and TOKEN_SECRET to auth. Tail: tail -f logs/sim-a.console.log logs/sim-b.console.log"
 
 kill-sims:
 	@for name in sim-a sim-b; do \

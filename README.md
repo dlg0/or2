@@ -37,3 +37,10 @@ Monorepo scaffold for a web-first, 2D, multiplayer world designed for kids with 
 ## Notes
 - Server listens on `PORT=2567` by default.
 - See `docs/prds/games-spec.md` for PRD, data model, and roadmap.
+
+## Avatar Upgrades
+- Catalog lives in `packages/shared/src/index.ts` (`UPGRADE_CATALOG`).
+- Each upgrade specifies a gameplay power (e.g., `speed`) and a visual hint (e.g., `glow`).
+- Server includes a `player.upgrades` array in room state and applies speed multipliers to movement.
+- Web client renders visual hints; speed adds a pulsing glow around the avatar.
+- Collect upgrades by running into pulsing items placed around spawn.

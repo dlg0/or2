@@ -6,7 +6,6 @@ export default function Landing() {
         <div style={{ display: "flex", gap: 12 }}>
           <a href="/sign-in"><button>I'm a Parent</button></a>
           <a href="/kid"><button>I'm a Kid</button></a>
-          <a href="/play"><button>Skip to Play</button></a>
         </div>
       </div>
     </main>

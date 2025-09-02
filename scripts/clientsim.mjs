@@ -6,6 +6,8 @@ const { Client } = require('colyseus.js');
 
 const name = process.env.NAME || `sim-${Math.random().toString(16).slice(-4)}`;
 const url = (process.env.SERVER_URL || 'ws://localhost:2567').replace(/^http/, 'ws');
+const tokenSecret = process.env.TOKEN_SECRET || null;
+const kidId = process.env.KID_ID || null;
 const logDir = new URL('../logs/', import.meta.url);
 const logPath = new URL(`client-${name}.log`, logDir).pathname;
 fs.mkdirSync(logDir, { recursive: true });
@@ -23,7 +25,16 @@ async function connect() {
   try {
     const client = new Client(url);
     flog(`connecting ${url}`);
-    room = await client.joinOrCreate('world');
+    let opts = {};
+    if (tokenSecret && kidId) {
+      const payload = Buffer.from(JSON.stringify({ kid: kidId, exp: Math.floor(Date.now()/1000) + 60*5 }));
+      const data = payload.toString('base64').replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+      const crypto = await import('crypto');
+      const sig = crypto.createHmac('sha256', tokenSecret).update(data).digest('hex');
+      opts.kidToken = `${data}.${sig}`;
+      flog(`using kidToken for kid=${kidId}`);
+    }
+    room = await client.joinOrCreate('world', opts);
     flog(`connected room=${room.roomId} session=${room.sessionId}`);
     reconnect = 500;
     room.onStateChange((_state) => {

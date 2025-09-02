@@ -10,7 +10,7 @@ export default clerkMiddleware({
     "/health",
     "/api/health",
   ],
-});
+} as any);
 
 export const config = {
   // Match all routes except static files and _next

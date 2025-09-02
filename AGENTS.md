@@ -47,7 +47,17 @@
 - Never commit secrets; use `.env` (local) and provide `.env.example`.
 - Document required environment variables in `README`.
 
+### Fail‑Fast Environment Variables (avoid silent fallbacks)
+- Do not use default/fallback secrets for auth, encryption, or critical config (e.g., `process.env.TOKEN_SECRET || "dev-secret"`).
+- If a required env var is missing, fail fast at boot with a clear error message and exit non‑zero.
+- When a dev default is truly necessary, guard it behind an explicit opt‑in flag (e.g., `ALLOW_DEV_DEFAULTS=1`) and log a prominent warning.
+- Add a startup preflight that validates required env vars; echo a short fingerprint (not the value) for cross‑service alignment.
+- Surface diagnostics via a health endpoint (e.g., secret fingerprint, auth mode) to quickly detect mismatches in dev.
+- Prefer a single source of truth for env loading (e.g., read repo‑root `.env` once) rather than per‑package fallbacks.
+- Tests and simulators should inject env explicitly; avoid relying on implicit defaults.
+
 ## Agent Notes (for automated contributors)
 - Keep patches minimal and scoped; avoid sweeping refactors.
 - Explain intent briefly before running commands; prefer `apply_patch` for edits.
 - Do not add new dependencies or network calls without explicit instruction.
+- When touching auth/config code, remove silent fallbacks and add boot‑time validation with clear errors.

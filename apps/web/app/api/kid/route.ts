@@ -3,8 +3,9 @@ import { getDb } from "@db/client";
 import { families, childProfiles } from "@db/schema";
 import { eq, and } from "drizzle-orm";
 
-function setCookie(name: string, value: string) {
-  cookies().set({ name, value, httpOnly: true, sameSite: "lax", path: "/" });
+async function setCookie(name: string, value: string) {
+  const jar = await cookies();
+  jar.set({ name, value, httpOnly: true, sameSite: "lax", path: "/" });
 }
 
 export async function POST(request: Request) {
@@ -29,10 +30,10 @@ export async function POST(request: Request) {
   }
 
   // Set a simple cookie for the child session (dev only)
-  setCookie("kid_id", child.id);
-  setCookie("kid_family", fam[0].id);
-  setCookie("kid_status", child.status);
+  await setCookie("kid_id", child.id);
+  await setCookie("kid_family", fam[0].id);
+  await setCookie("kid_status", child.status);
+  await setCookie("kid_name", displayName);
 
-  return Response.json({ id: child.id, status: child.status, familyId: fam[0].id });
+  return Response.json({ id: child.id, status: child.status, familyId: fam[0].id, displayName });
 }
-
