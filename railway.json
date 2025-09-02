@@ -1,0 +1,16 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "installCommand": "npm ci",
+    "buildCommand": "npm -w @openworld/shared run build && npm -w server run build"
+  },
+  "deploy": {
+    "startCommand": "node apps/server/dist/index.js",
+    "healthcheckPath": "/healthz"
+  },
+  "variables": {
+    "NODE_ENV": "production",
+    "REQUIRE_KID_AUTH": "0"
+  }
+}
+
